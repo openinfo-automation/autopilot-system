@@ -1,1 +1,5 @@
-
+requirements.txt
+----------------
+Flask==2.3.2
+openai==1.32.2
+requests==2.32.0
