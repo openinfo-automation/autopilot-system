@@ -4,69 +4,74 @@ import google.generativeai as genai
 
 app = Flask(__name__)
 
-# Configure Gemini
+# Initialize Gemini
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-model = genai.GenerativeModel('models/gemini-1.5-flash')
 
 @app.route("/", methods=["GET"])
 def home():
+    """Health check endpoint"""
     return jsonify({
         "status": "online",
-        "system": "Autopilot System v1.0 (Google Gemini)"
+        "system": "Autopilot AI",
+        "version": "1.0",
+        "model": "gemini-pro"
     })
 
 @app.route("/autopilot/execute", methods=["POST"])
-def execute_task():
-    """Execute a single autopilot task"""
+def execute():
+    """Single task execution"""
     try:
-        data = request.json
-        prompt = data.get("prompt")
-        
+        prompt = request.json.get("prompt")
         if not prompt:
-            return jsonify({"error": "No prompt provided"}), 400
+            return jsonify({"error": "Missing prompt"}), 400
         
+        model = genai.GenerativeModel("gemini-pro")
         response = model.generate_content(prompt)
         
         return jsonify({
-            "status": "completed",
+            "success": True,
             "result": response.text
         })
     
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 @app.route("/autopilot/workflow", methods=["POST"])
-def run_workflow():
-    """Execute a multi-step autopilot workflow"""
+def workflow():
+    """Multi-step workflow execution"""
     try:
-        data = request.json
-        workflow_steps = data.get("steps", [])
-        results = []
+        steps = request.json.get("steps", [])
+        if not steps:
+            return jsonify({"error": "No steps provided"}), 400
         
-        for step in workflow_steps:
-            prompt = step.get("prompt")
-            context = step.get("context", "")
-            
-            # Add context from previous steps
+        model = genai.GenerativeModel("gemini-pro")
+        results = []
+        context = ""
+        
+        for step in steps:
+            prompt = step.get("prompt", "")
             if context:
-                prompt = f"Previous context: {context}\n\nNew task: {prompt}"
+                prompt = f"Context: {context}\n\nTask: {prompt}"
             
             response = model.generate_content(prompt)
-            results.append(response.text)
-            
-            # Use result as context for next step
-            if len(results) > 0:
-                step["context"] = results[-1]
+            result = response.text
+            results.append(result)
+            context = result[:500]  # Use first 500 chars as context
         
         return jsonify({
-            "status": "workflow_completed",
-            "steps_executed": len(results),
+            "success": True,
+            "steps_completed": len(results),
             "results": results
         })
     
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
