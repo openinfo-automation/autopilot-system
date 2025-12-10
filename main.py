@@ -7,14 +7,20 @@ app = Flask(__name__)
 # Initialize Gemini
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
+# --- CONFIGURATION START ---
+# We use "gemini-1.5-flash" as the replacement for "gemini-pro".
+# This solves the 404 Model Not Found error.
+CURRENT_MODEL = "gemini-1.5-flash"
+# --- CONFIGURATION END ---
+
 @app.route("/", methods=["GET"])
 def home():
     """Health check endpoint"""
     return jsonify({
         "status": "online",
         "system": "Autopilot AI",
-        "version": "1.0",
-        "model": "gemini-pro"
+        "version": "1.1",
+        "model": CURRENT_MODEL
     })
 
 @app.route("/autopilot/execute", methods=["POST"])
@@ -25,7 +31,8 @@ def execute():
         if not prompt:
             return jsonify({"error": "Missing prompt"}), 400
         
-        model = genai.GenerativeModel("gemini-pro")
+        # Use the updated model variable
+        model = genai.GenerativeModel(CURRENT_MODEL)
         response = model.generate_content(prompt)
         
         return jsonify({
@@ -47,7 +54,8 @@ def workflow():
         if not steps:
             return jsonify({"error": "No steps provided"}), 400
         
-        model = genai.GenerativeModel("gemini-pro")
+        # Use the updated model variable
+        model = genai.GenerativeModel(CURRENT_MODEL)
         results = []
         context = ""
         
