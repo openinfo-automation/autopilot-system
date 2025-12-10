@@ -8,9 +8,9 @@ app = Flask(__name__)
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
 # --- CONFIGURATION ---
-# We are trying the specific version number "-002" 
-# because the generic alias gave a 404 error.
-CURRENT_MODEL = "gemini-1.5-flash-002"
+# We found "gemini-2.5-flash" in your approved list.
+# This is the correct model to use.
+CURRENT_MODEL = "gemini-2.5-flash"
 # ---------------------
 
 @app.route("/", methods=["GET"])
@@ -19,8 +19,8 @@ def home():
     return jsonify({
         "status": "online",
         "system": "Autopilot AI",
-        "version": "1.2",
-        "model_setting": CURRENT_MODEL
+        "version": "1.3",
+        "model_used": CURRENT_MODEL
     })
 
 @app.route("/check-models", methods=["GET"])
@@ -32,9 +32,7 @@ def check_models():
     try:
         available_models = []
         for m in genai.list_models():
-            # We only want models that can generate text (content)
             if 'generateContent' in m.supported_generation_methods:
-                # Strip the "models/" prefix for cleaner reading
                 name = m.name.replace("models/", "")
                 available_models.append(name)
         
@@ -53,6 +51,7 @@ def execute():
         if not prompt:
             return jsonify({"error": "Missing prompt"}), 400
         
+        # Using gemini-2.5-flash
         model = genai.GenerativeModel(CURRENT_MODEL)
         response = model.generate_content(prompt)
         
