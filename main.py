@@ -10,7 +10,7 @@ app = Flask(__name__)
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
 # CONFIGURATION: Ensure this matches what we found in your list
-CURRENT_MODEL = "gemini-2.5-flash"
+CURRENT_MODEL = "gemini-2.0-flash"
 
 @app.route("/", methods=["GET"])
 def home():
