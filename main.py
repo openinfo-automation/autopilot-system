@@ -7,11 +7,11 @@ app = Flask(__name__)
 # Initialize Gemini
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
 
-# --- CONFIGURATION START ---
-# We use "gemini-1.5-flash" as the replacement for "gemini-pro".
-# This solves the 404 Model Not Found error.
-CURRENT_MODEL = "gemini-1.5-flash"
-# --- CONFIGURATION END ---
+# --- CONFIGURATION ---
+# We are trying the specific version number "-002" 
+# because the generic alias gave a 404 error.
+CURRENT_MODEL = "gemini-1.5-flash-002"
+# ---------------------
 
 @app.route("/", methods=["GET"])
 def home():
@@ -19,9 +19,31 @@ def home():
     return jsonify({
         "status": "online",
         "system": "Autopilot AI",
-        "version": "1.1",
-        "model": CURRENT_MODEL
+        "version": "1.2",
+        "model_setting": CURRENT_MODEL
     })
+
+@app.route("/check-models", methods=["GET"])
+def check_models():
+    """
+    DIAGNOSTIC TOOL: 
+    Click this to see the EXACT names of models your API key can access.
+    """
+    try:
+        available_models = []
+        for m in genai.list_models():
+            # We only want models that can generate text (content)
+            if 'generateContent' in m.supported_generation_methods:
+                # Strip the "models/" prefix for cleaner reading
+                name = m.name.replace("models/", "")
+                available_models.append(name)
+        
+        return jsonify({
+            "success": True,
+            "available_models": available_models
+        })
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/autopilot/execute", methods=["POST"])
 def execute():
@@ -31,7 +53,6 @@ def execute():
         if not prompt:
             return jsonify({"error": "Missing prompt"}), 400
         
-        # Use the updated model variable
         model = genai.GenerativeModel(CURRENT_MODEL)
         response = model.generate_content(prompt)
         
@@ -54,7 +75,6 @@ def workflow():
         if not steps:
             return jsonify({"error": "No steps provided"}), 400
         
-        # Use the updated model variable
         model = genai.GenerativeModel(CURRENT_MODEL)
         results = []
         context = ""
@@ -67,7 +87,7 @@ def workflow():
             response = model.generate_content(prompt)
             result = response.text
             results.append(result)
-            context = result[:500]  # Use first 500 chars as context
+            context = result[:500]
         
         return jsonify({
             "success": True,
